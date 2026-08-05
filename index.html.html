@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flujos vehiculares por peaje — TPDM 2025</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F4EE;
+    --panel:#FFFFFF;
+    --ink:#1C2430;
+    --ink-soft:#5B6472;
+    --line:#DCD7C9;
+    --carga:#C6742B;
+    --nocarga:#2B6E62;
+    --taller:#1C2430;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif}
+  .slide{
+    width:100%;
+    max-width:1280px;
+    aspect-ratio:16/9;
+    margin:0 auto;
+    padding:28px 32px 18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 4px}
+  h1{font-size:22px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 14px}
+  .body{display:flex;gap:24px;flex:1;min-height:0}
+  .stage{
+    position:relative;
+    flex:1.5;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--panel);
+    overflow:hidden;
+  }
+  .station{
+    position:absolute;
+    border-radius:50%;
+    cursor:pointer;
+    border:2px solid var(--panel);
+    box-shadow:0 0 0 1px var(--line);
+    transition:transform .15s ease;
+  }
+  .station:hover{transform:scale(1.06)}
+  .station.active{box-shadow:0 0 0 2px var(--ink)}
+  .label{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);white-space:nowrap}
+  .taller-mark{position:absolute;width:12px;height:12px;background:var(--taller);transform:translate(-50%,-50%) rotate(45deg)}
+  .taller-label{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink);background:var(--panel);padding:2px 5px;border:1px solid var(--line);border-radius:2px;white-space:nowrap}
+  .panel{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--panel);
+    padding:20px 22px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+  }
+  .panel-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .panel-top .name{font-size:17px;font-weight:600}
+  .panel-top .tag{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em}
+  .stat-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .stat-label{font-size:12px;color:var(--ink-soft)}
+  .stat-value{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600}
+  .bar{height:9px;border-radius:2px;overflow:hidden;display:flex;margin:12px 0 10px}
+  .bar-carga{background:var(--carga)}
+  .bar-nocarga{background:var(--nocarga)}
+  .legend{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--ink-soft);margin-top:6px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+  .sq{width:7px;height:7px;display:inline-block;transform:rotate(45deg);background:var(--taller);flex:none}
+  footer{margin-top:8px;font-size:9.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace}
+</style>
+</head>
+<body>
+<div class="slide">
+  <p class="eyebrow">ANI · OETR · Tránsito promedio diario mensual</p>
+  <h1>Flujos vehiculares por estación de peaje</h1>
+  <p class="sub">Corredor Andes — Fusca — Unisabana — Sopó / El Roble · promedio 2025 · haz clic en una estación</p>
+
+  <div class="body">
+    <div class="stage" id="stage">
+      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;top:0;left:0">
+        <path d="M 14.4 92.3 C 16.1 87.5, 16.7 83.7, 17.2 79.8 C 17.8 74.0, 18.7 69.2, 19.8 63.5 C 21.7 54.8, 25.6 49.0, 31.1 45.2 C 37.8 40.4, 44.4 40.4, 48.9 42.3 C 55.6 45.2, 62.2 36.5, 68.9 26.9 C 75.6 17.3, 81.1 12.5, 87.8 8.7"
+              fill="none" stroke="#1C2430" stroke-opacity=".28" vector-effect="non-scaling-stroke" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>
+        <path d="M 48.9 42.3 C 48.3 53.8, 46.7 63.5, 44.4 74.0 C 42.8 81.7, 41.7 86.5, 40.9 90.4"
+              fill="none" stroke="#1C2430" stroke-opacity=".28" vector-effect="non-scaling-stroke" stroke-width="2.2" stroke-dasharray="6 5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <footer>Fuente: Agencia Nacional de Infraestructura, OETR, cierre abril 2026. Trazado esquemático a partir del mapa del corredor.</footer>
+</div>
+
+<script>
+const data = [
+  { id:'ANDES',     x:14.4, y:92.3, side:'right', total:34326.7, carga:3771.5,  nocarga:30555.2 },
+  { id:'FUSCA',     x:16.9, y:84.6, side:'right', total:4787.9,  carga:251.2,   nocarga:4536.7 },
+  { id:'UNISABANA', x:19.1, y:75.4, side:'right', total:195.2,   carga:195.2,   nocarga:0 },
+  { id:'EL ROBLE',  x:87.8, y:8.7,  side:'left',  total:23426.1, carga:1484.2,  nocarga:21941.9 },
+  { id:'SOPÓ',      x:40.9, y:90.4, side:'right', total:1876.9,  carga:159.8,   nocarga:1717.1 }
+];
+const taller = { x:31.1, y:45.2 };
+
+const maxT = Math.max(...data.map(d=>d.total));
+const stage = document.getElementById('stage');
+const panel = document.getElementById('panel');
+
+function fmt(n){ return Math.round(n).toLocaleString('es-CO'); }
+
+data.forEach(d=>{
+  const r = 8 + 18*Math.sqrt(d.total/maxT);
+  const pct = d.total ? d.carga/d.total*100 : 0;
+  const el = document.createElement('div');
+  el.className='station';
+  el.id='st-'+d.id;
+  el.style.cssText = `width:${r*2}px;height:${r*2}px;left:calc(${d.x}% - ${r}px);top:calc(${d.y}% - ${r}px);background:conic-gradient(var(--carga) 0% ${pct}%, var(--nocarga) ${pct}% 100%)`;
+  el.onclick=()=>select(d.id);
+  stage.appendChild(el);
+
+  const lbl = document.createElement('div');
+  lbl.className='label';
+  lbl.textContent=d.id;
+  if(d.side==='left'){
+    lbl.style.right = `calc(${100-d.x}% + ${r+7}px)`;
+    lbl.style.top = `calc(${d.y}% - 6px)`;
+    lbl.style.textAlign='right';
+  } else {
+    lbl.style.left = `calc(${d.x}% + ${r+7}px)`;
+    lbl.style.top = `calc(${d.y}% - 6px)`;
+  }
+  stage.appendChild(lbl);
+});
+
+const tm = document.createElement('div');
+tm.className='taller-mark';
+tm.style.left=taller.x+'%';
+tm.style.top=taller.y+'%';
+stage.appendChild(tm);
+const tl = document.createElement('div');
+tl.className='taller-label';
+tl.textContent='Taller ANI · PK 38';
+tl.style.left=`calc(${taller.x}% + 10px)`;
+tl.style.top=`calc(${taller.y}% - 26px)`;
+stage.appendChild(tl);
+
+function select(id){
+  document.querySelectorAll('.station').forEach(s=>s.classList.remove('active'));
+  document.getElementById('st-'+id).classList.add('active');
+  const d = data.find(x=>x.id===id);
+  const pct = d.total ? d.carga/d.total*100 : 0;
+  panel.innerHTML = `
+    <div class="panel-top">
+      <span class="name">${d.id}</span>
+      <span class="tag">TPDM 2025</span>
+    </div>
+    <div class="stat-row"><span class="stat-label">Total</span><span class="stat-value">${fmt(d.total)}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--carga)">Carga</span><span class="stat-value">${fmt(d.carga)}</span></div>
+    <div class="stat-row"><span class="stat-label" style="color:var(--nocarga)">No carga</span><span class="stat-value">${fmt(d.nocarga)}</span></div>
+    <div class="bar">
+      <div class="bar-carga" style="width:${pct}%"></div>
+      <div class="bar-nocarga" style="width:${100-pct}%"></div>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--carga)"></i>Carga — ${pct.toFixed(1)}%</span>
+      <span><i class="dot" style="background:var(--nocarga)"></i>No carga — ${(100-pct).toFixed(1)}%</span>
+      <span><i class="sq"></i>Taller ANI PK 38 — punto de referencia</span>
+    </div>`;
+}
+select('ANDES');
+</script>
+</body>
+</html>
